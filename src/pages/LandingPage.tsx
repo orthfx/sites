@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function LandingPage() {
   return (
@@ -8,12 +9,15 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <span className="text-lg font-semibold">orthfx/sites</span>
           <div className="flex gap-2">
-            <Button variant="ghost" asChild>
-              <Link to="/login">Log in</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/signup">Get started</Link>
-            </Button>
+            <Link
+              to="/login"
+              className={cn(buttonVariants({ variant: "ghost" }))}
+            >
+              Log in
+            </Link>
+            <Link to="/signup" className={cn(buttonVariants())}>
+              Get started
+            </Link>
           </div>
         </div>
       </header>
@@ -29,9 +33,12 @@ export function LandingPage() {
             essentials: who you are, where you are, when services are, and who
             to contact.
           </p>
-          <Button size="lg" asChild>
-            <Link to="/signup">Create your parish page</Link>
-          </Button>
+          <Link
+            to="/signup"
+            className={cn(buttonVariants({ size: "lg" }))}
+          >
+            Create your parish page
+          </Link>
         </div>
       </main>
 

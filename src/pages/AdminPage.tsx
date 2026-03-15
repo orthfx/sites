@@ -102,7 +102,7 @@ function CreateChurch() {
                 required
               />
               <span className="text-sm text-muted-foreground whitespace-nowrap">
-                .orthfx.org
+                .orthdx.site
               </span>
             </div>
           </div>
@@ -202,7 +202,7 @@ function EditChurch({ church }: { church: Church }) {
     setNewPersonTitle("");
   }
 
-  const previewUrl = `${window.location.protocol}//${church.slug}.${window.location.hostname === "localhost" ? "localhost" : "orthfx.org"}${window.location.port ? `:${window.location.port}` : ""}`;
+  const previewUrl = `${window.location.protocol}//${church.slug}.${window.location.hostname === "localhost" ? "localhost" : "orthdx.site"}${window.location.port ? `:${window.location.port}` : ""}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -223,7 +223,7 @@ function EditChurch({ church }: { church: Church }) {
           rel="noopener noreferrer"
           className="text-sm text-muted-foreground underline"
         >
-          {church.slug}.orthfx.org
+          {church.slug}.orthdx.site
         </a>
       </div>
 

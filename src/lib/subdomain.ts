@@ -1,4 +1,4 @@
-const ROOT_DOMAIN = "orthfx.org";
+const ROOT_DOMAIN = "orthdx.site";
 
 export function getSubdomain(hostname: string): string | null {
   // Dev: stmichael.localhost -> "stmichael"
@@ -8,7 +8,7 @@ export function getSubdomain(hostname: string): string | null {
     return null;
   }
 
-  // Prod: stmichael.orthfx.org -> "stmichael"
+  // Prod: stmichael.orthdx.site -> "stmichael"
   if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     const sub = hostname.replace(`.${ROOT_DOMAIN}`, "");
     if (sub && sub !== "www" && sub !== "app") return sub;

@@ -158,8 +158,8 @@ function ParishPage({ church }: { church: Church }) {
 
       <footer className="border-t px-6 py-4 text-center text-xs text-muted-foreground">
         Powered by{" "}
-        <a href="https://orthfx.org" className="underline">
-          orthfx.org
+        <a href="https://orthdx.site" className="underline">
+          orthdx.site
         </a>
       </footer>
     </div>
