@@ -63,12 +63,17 @@ export function LoginPage() {
             <Button type="submit" disabled={loading}>
               {loading ? "Logging in..." : "Log in"}
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              No account?{" "}
-              <Link to="/signup" className="underline">
-                Sign up
+            <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
+              <Link to="/forgot-password" className="underline">
+                Forgot password?
               </Link>
-            </p>
+              <p>
+                No account?{" "}
+                <Link to="/signup" className="underline">
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </form>
         </CardContent>
       </Card>

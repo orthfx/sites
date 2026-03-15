@@ -9,7 +9,15 @@ export const listByChurch = query({
       .query("personnel")
       .withIndex("by_churchId", (q) => q.eq("churchId", args.churchId))
       .collect();
-    return personnel.sort((a, b) => a.order - b.order);
+    const sorted = personnel.sort((a, b) => a.order - b.order);
+    return Promise.all(
+      sorted.map(async (p) => ({
+        ...p,
+        avatarUrl: p.avatarId
+          ? await ctx.storage.getUrl(p.avatarId)
+          : null,
+      }))
+    );
   },
 });
 
@@ -26,7 +34,6 @@ export const add = mutation({
     const church = await ctx.db.get(args.churchId);
     if (!church || church.userId !== userId) throw new Error("Not authorized");
 
-    // Get next order number
     const existing = await ctx.db
       .query("personnel")
       .withIndex("by_churchId", (q) => q.eq("churchId", args.churchId))
@@ -47,6 +54,7 @@ export const update = mutation({
     id: v.id("personnel"),
     name: v.optional(v.string()),
     title: v.optional(v.string()),
+    avatarId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);

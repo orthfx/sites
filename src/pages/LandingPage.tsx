@@ -63,22 +63,35 @@ export function LandingPage() {
               {churches.map((church) => (
                 <a
                   key={church._id}
-                  href={`${window.location.protocol}//${church.slug}.${window.location.hostname === "localhost" ? `localhost:${window.location.port}` : "orthdx.site"}`}
-                  className="group rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                  href={`https://${church.slug}.orthdx.site`}
+                  className="group flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
                 >
-                  <h3 className="font-medium group-hover:underline">
-                    {church.name}
-                  </h3>
-                  {church.jurisdiction && (
-                    <p className="text-sm text-muted-foreground">
-                      {church.jurisdiction}
-                    </p>
+                  {church.avatarUrl ? (
+                    <img
+                      src={church.avatarUrl}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 shrink-0 rounded-full bg-muted" />
                   )}
-                  {(church.city || church.state) && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {[church.city, church.state].filter(Boolean).join(", ")}
-                    </p>
-                  )}
+                  <div>
+                    <h3 className="font-medium group-hover:underline">
+                      {church.name}
+                    </h3>
+                    {church.jurisdiction && (
+                      <p className="text-sm text-muted-foreground">
+                        {church.jurisdiction}
+                      </p>
+                    )}
+                    {(church.city || church.state) && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {[church.city, church.state]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
                 </a>
               ))}
             </div>

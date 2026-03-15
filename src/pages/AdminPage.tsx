@@ -15,25 +15,31 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { ImageUpload } from "@/components/ImageUpload";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export function AdminPage() {
-  const church = useQuery(api.churches.getMine);
+  const churches = useQuery(api.churches.getMine);
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
+  const [selectedId, setSelectedId] = useState<Id<"churches"> | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   async function handleSignOut() {
     await signOut();
     navigate("/");
   }
 
-  if (church === undefined) {
+  if (churches === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
+
+  const selected = churches.find((c) => c._id === selectedId) ?? null;
 
   return (
     <div className="min-h-screen">
@@ -51,13 +57,104 @@ export function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-2xl px-6 py-8">
-        {church === null ? <CreateChurch /> : <EditChurch church={church} />}
+        {selected && !showCreate ? (
+          <>
+            <button
+              onClick={() => setSelectedId(null)}
+              className="mb-4 text-sm text-muted-foreground hover:underline"
+            >
+              &larr; All parishes
+            </button>
+            <EditChurch church={selected} />
+          </>
+        ) : showCreate ? (
+          <>
+            <button
+              onClick={() => setShowCreate(false)}
+              className="mb-4 text-sm text-muted-foreground hover:underline"
+            >
+              &larr; All parishes
+            </button>
+            <CreateChurch
+              onCreated={(id) => {
+                setShowCreate(false);
+                setSelectedId(id);
+              }}
+            />
+          </>
+        ) : (
+          <ChurchList
+            churches={churches}
+            onSelect={(id) => setSelectedId(id)}
+            onCreate={() => setShowCreate(true)}
+          />
+        )}
       </main>
     </div>
   );
 }
 
-function CreateChurch() {
+function ChurchList({
+  churches,
+  onSelect,
+  onCreate,
+}: {
+  churches: Church[];
+  onSelect: (id: Id<"churches">) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Your parishes</h2>
+        <Button size="sm" onClick={onCreate}>
+          New parish
+        </Button>
+      </div>
+      {churches.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <p>You haven't created any parish pages yet.</p>
+            <Button className="mt-4" onClick={onCreate}>
+              Create your first parish
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        churches.map((church) => (
+          <button
+            key={church._id}
+            onClick={() => onSelect(church._id)}
+            className="flex items-center gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+          >
+            {church.avatarUrl ? (
+              <img
+                src={church.avatarUrl}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-12 w-12 shrink-0 rounded-full bg-muted" />
+            )}
+            <div className="flex-1">
+              <div className="font-medium">{church.name}</div>
+              <div className="text-sm text-muted-foreground">
+                {church.slug}.orthdx.site
+              </div>
+            </div>
+            <span
+              className={`text-xs ${church.published ? "text-green-600" : "text-muted-foreground"}`}
+            >
+              {church.published ? "Published" : "Draft"}
+            </span>
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+
+function CreateChurch({ onCreated }: { onCreated: (id: Id<"churches">) => void }) {
   const create = useMutation(api.churches.create);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -67,7 +164,8 @@ function CreateChurch() {
     e.preventDefault();
     setError("");
     try {
-      await create({ name, slug: slug.toLowerCase() });
+      const id = await create({ name, slug: slug.toLowerCase() });
+      onCreated(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
@@ -132,6 +230,8 @@ interface Church {
   website?: string;
   latitude?: number;
   longitude?: number;
+  avatarUrl: string | null;
+  bannerUrl: string | null;
   services?: { name: string; day: string; time: string }[];
   published: boolean;
 }
@@ -143,6 +243,7 @@ function EditChurch({ church }: { church: Church }) {
   });
   const addPerson = useMutation(api.personnel.add);
   const removePerson = useMutation(api.personnel.remove);
+  const updatePerson = useMutation(api.personnel.update);
 
   const [form, setForm] = useState({
     name: church.name,
@@ -154,8 +255,6 @@ function EditChurch({ church }: { church: Church }) {
     phone: church.phone ?? "",
     email: church.email ?? "",
     website: church.website ?? "",
-    latitude: church.latitude?.toString() ?? "",
-    longitude: church.longitude?.toString() ?? "",
   });
 
   const [services, setServices] = useState(church.services ?? []);
@@ -170,12 +269,9 @@ function EditChurch({ church }: { church: Church }) {
   async function handleSave() {
     setSaving(true);
     try {
-      const { latitude, longitude, ...rest } = form;
       await update({
         id: church._id,
-        ...rest,
-        latitude: latitude ? parseFloat(latitude) : undefined,
-        longitude: longitude ? parseFloat(longitude) : undefined,
+        ...form,
         services,
       });
     } finally {
@@ -213,7 +309,7 @@ function EditChurch({ church }: { church: Church }) {
     setNewPersonTitle("");
   }
 
-  const previewUrl = `${window.location.protocol}//${church.slug}.${window.location.hostname === "localhost" ? "localhost" : "orthdx.site"}${window.location.port ? `:${window.location.port}` : ""}`;
+  const previewUrl = `https://${church.slug}.orthdx.site`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -228,14 +324,19 @@ function EditChurch({ church }: { church: Church }) {
             {church.published ? "Published" : "Draft"}
           </span>
         </div>
-        <a
-          href={previewUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-muted-foreground underline"
-        >
-          {church.slug}.orthdx.site
-        </a>
+        <div className="flex items-center gap-3 text-sm">
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground underline"
+          >
+            {church.slug}.orthdx.site
+          </a>
+          <Link to={`/parish/${church.slug}`} className="text-muted-foreground underline">
+            preview
+          </Link>
+        </div>
       </div>
 
       {/* Church info */}
@@ -244,6 +345,27 @@ function EditChurch({ church }: { church: Church }) {
           <CardTitle>Church information</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
+            <Label>Images</Label>
+            <div className="flex items-start gap-4">
+              <ImageUpload
+                currentUrl={church.avatarUrl}
+                onUploaded={(id) => update({ id: church._id, avatarId: id })}
+                label="Avatar"
+                aspect="square"
+              />
+              <ImageUpload
+                currentUrl={church.bannerUrl}
+                onUploaded={(id) => update({ id: church._id, bannerId: id })}
+                label="Banner"
+                aspect="banner"
+                className="flex-1"
+              />
+            </div>
+          </div>
+
+          <Separator />
+
           <div className="flex flex-col gap-2">
             <Label>Parish name</Label>
             <Input
@@ -264,33 +386,36 @@ function EditChurch({ church }: { church: Church }) {
 
           <div className="flex flex-col gap-2">
             <Label>Address</Label>
-            <Input
-              value={form.address}
-              onChange={(e) => setField("address", e.target.value)}
+            <AddressAutocomplete
+              defaultValue={[form.address, form.city, form.state, form.zip]
+                .filter(Boolean)
+                .join(", ")}
+              onSelect={(result) => {
+                setForm((f) => ({
+                  ...f,
+                  address: result.address,
+                  city: result.city,
+                  state: result.state,
+                  zip: result.zip,
+                }));
+                update({
+                  id: church._id,
+                  address: result.address,
+                  city: result.city,
+                  state: result.state,
+                  zip: result.zip,
+                  latitude: result.latitude,
+                  longitude: result.longitude,
+                });
+              }}
             />
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="flex flex-col gap-2">
-              <Label>City</Label>
-              <Input
-                value={form.city}
-                onChange={(e) => setField("city", e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>State</Label>
-              <Input
-                value={form.state}
-                onChange={(e) => setField("state", e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>ZIP</Label>
-              <Input
-                value={form.zip}
-                onChange={(e) => setField("zip", e.target.value)}
-              />
-            </div>
+            {form.address && (
+              <p className="text-xs text-muted-foreground">
+                {[form.address, form.city, form.state, form.zip]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+            )}
           </div>
 
           <Separator />
@@ -319,31 +444,6 @@ function EditChurch({ church }: { church: Church }) {
               value={form.website}
               onChange={(e) => setField("website", e.target.value)}
             />
-          </div>
-
-          <Separator />
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-2">
-              <Label>Latitude</Label>
-              <Input
-                type="number"
-                step="any"
-                placeholder="40.7128"
-                value={form.latitude}
-                onChange={(e) => setField("latitude", e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Longitude</Label>
-              <Input
-                type="number"
-                step="any"
-                placeholder="-74.0060"
-                value={form.longitude}
-                onChange={(e) => setField("longitude", e.target.value)}
-              />
-            </div>
           </div>
 
           <Button onClick={handleSave} disabled={saving}>
@@ -409,8 +509,17 @@ function EditChurch({ church }: { church: Church }) {
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {personnel?.map((person) => (
-            <div key={person._id} className="flex items-center justify-between">
-              <div>
+            <div key={person._id} className="flex items-center gap-3">
+              <ImageUpload
+                currentUrl={person.avatarUrl}
+                onUploaded={(id) =>
+                  updatePerson({ id: person._id, avatarId: id })
+                }
+                label="Photo"
+                aspect="square"
+                className="shrink-0 [&_button]:h-12 [&_button]:w-12"
+              />
+              <div className="flex-1">
                 <span className="font-medium">{person.name}</span>
                 <span className="ml-2 text-sm text-muted-foreground">
                   {person.title}

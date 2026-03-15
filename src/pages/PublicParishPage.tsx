@@ -48,6 +48,8 @@ interface Church {
   website?: string;
   latitude?: number;
   longitude?: number;
+  avatarUrl: string | null;
+  bannerUrl: string | null;
   services?: { name: string; day: string; time: string }[];
 }
 
@@ -68,13 +70,35 @@ function ParishPage({ church }: { church: Church }) {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Banner */}
+      {church.bannerUrl && (
+        <div className="h-48 w-full overflow-hidden sm:h-64">
+          <img
+            src={church.bannerUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
+
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold">{church.name}</h1>
-          {church.jurisdiction && (
-            <p className="mt-1 text-muted-foreground">{church.jurisdiction}</p>
+        <div className="mb-10 flex items-center gap-4">
+          {church.avatarUrl && (
+            <img
+              src={church.avatarUrl}
+              alt=""
+              className="h-16 w-16 rounded-full object-cover"
+            />
           )}
+          <div>
+            <h1 className="text-3xl font-bold">{church.name}</h1>
+            {church.jurisdiction && (
+              <p className="mt-1 text-muted-foreground">
+                {church.jurisdiction}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Map */}
@@ -148,13 +172,24 @@ function ParishPage({ church }: { church: Church }) {
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Clergy & Personnel
             </h2>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-3">
               {personnel.map((person) => (
-                <div key={person._id}>
-                  <span className="font-medium">{person.name}</span>
-                  <span className="ml-2 text-muted-foreground">
-                    {person.title}
-                  </span>
+                <div key={person._id} className="flex items-center gap-3">
+                  {person.avatarUrl ? (
+                    <img
+                      src={person.avatarUrl}
+                      alt=""
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-muted" />
+                  )}
+                  <div>
+                    <span className="font-medium">{person.name}</span>
+                    <span className="ml-2 text-muted-foreground">
+                      {person.title}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

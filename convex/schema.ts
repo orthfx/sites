@@ -20,6 +20,8 @@ export default defineSchema({
     website: v.optional(v.string()),
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
+    avatarId: v.optional(v.id("_storage")),
+    bannerId: v.optional(v.id("_storage")),
     services: v.optional(
       v.array(
         v.object({
@@ -40,5 +42,6 @@ export default defineSchema({
     name: v.string(),
     title: v.string(),
     order: v.number(),
+    avatarId: v.optional(v.id("_storage")),
   }).index("by_churchId", ["churchId"]),
 });
