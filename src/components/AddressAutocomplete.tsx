@@ -37,7 +37,7 @@ export function AddressAutocomplete({
 
       const get = (type: string) =>
         place.address_components?.find(
-          (c: google.maps.GeocoderAddressComponent) => c.types.includes(type)
+          (c) => c.types.includes(type)
         )?.short_name ?? "";
 
       const streetNumber = get("street_number");

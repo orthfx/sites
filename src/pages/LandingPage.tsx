@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function LandingPage() {
-  const churches = useQuery(api.churches.listPublished);
+  const communities = useQuery(api.communities.listPublished);
   const { isAuthenticated } = useConvexAuth();
 
   return (
@@ -56,19 +56,19 @@ export function LandingPage() {
         </section>
 
         {/* Directory */}
-        {churches && churches.length > 0 && (
+        {communities && communities.length > 0 && (
           <section className="border-t py-12">
             <h2 className="mb-6 text-2xl font-semibold">Parish directory</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              {churches.map((church) => (
+              {communities.map((community) => (
                 <a
-                  key={church._id}
-                  href={`https://${church.slug}.orthdx.site`}
+                  key={community._id}
+                  href={`https://${community.slug}.orthdx.site`}
                   className="group flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
                 >
-                  {church.avatarUrl ? (
+                  {community.avatarUrl ? (
                     <img
-                      src={church.avatarUrl}
+                      src={community.avatarUrl}
                       alt=""
                       className="h-12 w-12 shrink-0 rounded-full object-cover"
                     />
@@ -77,16 +77,16 @@ export function LandingPage() {
                   )}
                   <div>
                     <h3 className="font-medium group-hover:underline">
-                      {church.name}
+                      {community.name}
                     </h3>
-                    {church.jurisdiction && (
+                    {community.jurisdiction && (
                       <p className="text-sm text-muted-foreground">
-                        {church.jurisdiction}
+                        {community.jurisdiction}
                       </p>
                     )}
-                    {(church.city || church.state) && (
+                    {(community.city || community.state) && (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {[church.city, church.state]
+                        {[community.city, community.state]
                           .filter(Boolean)
                           .join(", ")}
                       </p>

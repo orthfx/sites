@@ -20,10 +20,10 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export function AdminPage() {
-  const churches = useQuery(api.churches.getMine);
+  const communities = useQuery(api.communities.getMine);
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
-  const [selectedId, setSelectedId] = useState<Id<"churches"> | null>(null);
+  const [selectedId, setSelectedId] = useState<Id<"communities"> | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   async function handleSignOut() {
@@ -31,7 +31,7 @@ export function AdminPage() {
     navigate("/");
   }
 
-  if (churches === undefined) {
+  if (communities === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -39,7 +39,7 @@ export function AdminPage() {
     );
   }
 
-  const selected = churches.find((c) => c._id === selectedId) ?? null;
+  const selected = communities.find((c) => c._id === selectedId) ?? null;
 
   return (
     <div className="min-h-screen">
@@ -63,9 +63,9 @@ export function AdminPage() {
               onClick={() => setSelectedId(null)}
               className="mb-4 text-sm text-muted-foreground hover:underline"
             >
-              &larr; All parishes
+              &larr; All communities
             </button>
-            <EditChurch church={selected} />
+            <EditCommunity community={selected} />
           </>
         ) : showCreate ? (
           <>
@@ -73,9 +73,9 @@ export function AdminPage() {
               onClick={() => setShowCreate(false)}
               className="mb-4 text-sm text-muted-foreground hover:underline"
             >
-              &larr; All parishes
+              &larr; All communities
             </button>
-            <CreateChurch
+            <CreateCommunity
               onCreated={(id) => {
                 setShowCreate(false);
                 setSelectedId(id);
@@ -83,8 +83,8 @@ export function AdminPage() {
             />
           </>
         ) : (
-          <ChurchList
-            churches={churches}
+          <CommunityList
+            communities={communities}
             onSelect={(id) => setSelectedId(id)}
             onCreate={() => setShowCreate(true)}
           />
@@ -94,42 +94,42 @@ export function AdminPage() {
   );
 }
 
-function ChurchList({
-  churches,
+function CommunityList({
+  communities,
   onSelect,
   onCreate,
 }: {
-  churches: Church[];
-  onSelect: (id: Id<"churches">) => void;
+  communities: Community[];
+  onSelect: (id: Id<"communities">) => void;
   onCreate: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Your parishes</h2>
+        <h2 className="text-xl font-semibold">Your communities</h2>
         <Button size="sm" onClick={onCreate}>
-          New parish
+          New community
         </Button>
       </div>
-      {churches.length === 0 ? (
+      {communities.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            <p>You haven't created any parish pages yet.</p>
+            <p>You haven't created any community pages yet.</p>
             <Button className="mt-4" onClick={onCreate}>
-              Create your first parish
+              Create your first community
             </Button>
           </CardContent>
         </Card>
       ) : (
-        churches.map((church) => (
+        communities.map((community) => (
           <button
-            key={church._id}
-            onClick={() => onSelect(church._id)}
+            key={community._id}
+            onClick={() => onSelect(community._id)}
             className="flex items-center gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
           >
-            {church.avatarUrl ? (
+            {community.avatarUrl ? (
               <img
-                src={church.avatarUrl}
+                src={community.avatarUrl}
                 alt=""
                 className="h-12 w-12 shrink-0 rounded-full object-cover"
               />
@@ -137,16 +137,21 @@ function ChurchList({
               <div className="h-12 w-12 shrink-0 rounded-full bg-muted" />
             )}
             <div className="flex-1">
-              <div className="font-medium">{church.name}</div>
+              <div className="font-medium">{community.name}</div>
               <div className="text-sm text-muted-foreground">
-                {church.slug}.orthdx.site
+                {community.slug}.orthdx.site
               </div>
             </div>
-            <span
-              className={`text-xs ${church.published ? "text-green-600" : "text-muted-foreground"}`}
-            >
-              {church.published ? "Published" : "Draft"}
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span
+                className={`text-xs ${community.published ? "text-green-600" : "text-muted-foreground"}`}
+              >
+                {community.published ? "Published" : "Draft"}
+              </span>
+              <span className="text-xs text-muted-foreground capitalize">
+                {community.role}
+              </span>
+            </div>
           </button>
         ))
       )}
@@ -154,17 +159,24 @@ function ChurchList({
   );
 }
 
-function CreateChurch({ onCreated }: { onCreated: (id: Id<"churches">) => void }) {
-  const create = useMutation(api.churches.create);
+function CreateCommunity({
+  onCreated,
+}: {
+  onCreated: (id: Id<"communities">) => void;
+}) {
+  const create = useMutation(api.communities.create);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [type, setType] = useState<
+    "parish" | "mission" | "monastery" | "chapel" | "cathedral"
+  >("parish");
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     try {
-      const id = await create({ name, slug: slug.toLowerCase() });
+      const id = await create({ name, slug: slug.toLowerCase(), type });
       onCreated(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -174,15 +186,15 @@ function CreateChurch({ onCreated }: { onCreated: (id: Id<"churches">) => void }
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create your parish page</CardTitle>
+        <CardTitle>Create a community page</CardTitle>
         <CardDescription>
-          Choose a name and subdomain for your church's page.
+          Choose a name, type, and subdomain for your community's page.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Parish name</Label>
+            <Label htmlFor="name">Community name</Label>
             <Input
               id="name"
               placeholder="St. Michael Orthodox Church"
@@ -192,6 +204,21 @@ function CreateChurch({ onCreated }: { onCreated: (id: Id<"churches">) => void }
             />
           </div>
           <div className="flex flex-col gap-2">
+            <Label htmlFor="type">Type</Label>
+            <select
+              id="type"
+              value={type}
+              onChange={(e) => setType(e.target.value as typeof type)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="parish">Parish</option>
+              <option value="mission">Mission</option>
+              <option value="monastery">Monastery</option>
+              <option value="chapel">Chapel</option>
+              <option value="cathedral">Cathedral</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
             <Label htmlFor="slug">Subdomain</Label>
             <div className="flex items-center gap-1">
               <Input
@@ -199,7 +226,9 @@ function CreateChurch({ onCreated }: { onCreated: (id: Id<"churches">) => void }
                 placeholder="stmichael"
                 value={slug}
                 onChange={(e) =>
-                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                  setSlug(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
+                  )
                 }
                 required
               />
@@ -216,10 +245,12 @@ function CreateChurch({ onCreated }: { onCreated: (id: Id<"churches">) => void }
   );
 }
 
-interface Church {
-  _id: Id<"churches">;
+interface Community {
+  _id: Id<"communities">;
   name: string;
   slug: string;
+  type: "parish" | "mission" | "monastery" | "chapel" | "cathedral";
+  status: "verified" | "unclaimed" | "pending";
   jurisdiction?: string;
   address?: string;
   city?: string;
@@ -234,30 +265,31 @@ interface Church {
   bannerUrl: string | null;
   services?: { name: string; day: string; time: string }[];
   published: boolean;
+  role: string;
 }
 
-function EditChurch({ church }: { church: Church }) {
-  const update = useMutation(api.churches.update);
-  const personnel = useQuery(api.personnel.listByChurch, {
-    churchId: church._id,
+function EditCommunity({ community }: { community: Community }) {
+  const update = useMutation(api.communities.update);
+  const personnel = useQuery(api.personnel.listByCommunity, {
+    communityId: community._id,
   });
   const addPerson = useMutation(api.personnel.add);
   const removePerson = useMutation(api.personnel.remove);
   const updatePerson = useMutation(api.personnel.update);
 
   const [form, setForm] = useState({
-    name: church.name,
-    jurisdiction: church.jurisdiction ?? "",
-    address: church.address ?? "",
-    city: church.city ?? "",
-    state: church.state ?? "",
-    zip: church.zip ?? "",
-    phone: church.phone ?? "",
-    email: church.email ?? "",
-    website: church.website ?? "",
+    name: community.name,
+    jurisdiction: community.jurisdiction ?? "",
+    address: community.address ?? "",
+    city: community.city ?? "",
+    state: community.state ?? "",
+    zip: community.zip ?? "",
+    phone: community.phone ?? "",
+    email: community.email ?? "",
+    website: community.website ?? "",
   });
 
-  const [services, setServices] = useState(church.services ?? []);
+  const [services, setServices] = useState(community.services ?? []);
   const [newPersonName, setNewPersonName] = useState("");
   const [newPersonTitle, setNewPersonTitle] = useState("");
   const [saving, setSaving] = useState(false);
@@ -270,7 +302,7 @@ function EditChurch({ church }: { church: Church }) {
     setSaving(true);
     try {
       await update({
-        id: church._id,
+        id: community._id,
         ...form,
         services,
       });
@@ -280,7 +312,7 @@ function EditChurch({ church }: { church: Church }) {
   }
 
   async function handleTogglePublish() {
-    await update({ id: church._id, published: !church.published });
+    await update({ id: community._id, published: !community.published });
   }
 
   async function handleAddService() {
@@ -301,7 +333,7 @@ function EditChurch({ church }: { church: Church }) {
     e.preventDefault();
     if (!newPersonName || !newPersonTitle) return;
     await addPerson({
-      churchId: church._id,
+      communityId: community._id,
       name: newPersonName,
       title: newPersonTitle,
     });
@@ -309,7 +341,7 @@ function EditChurch({ church }: { church: Church }) {
     setNewPersonTitle("");
   }
 
-  const previewUrl = `https://${church.slug}.orthdx.site`;
+  const previewUrl = `https://${community.slug}.orthdx.site`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -317,11 +349,11 @@ function EditChurch({ church }: { church: Church }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Switch
-            checked={church.published}
+            checked={community.published}
             onCheckedChange={handleTogglePublish}
           />
           <span className="text-sm">
-            {church.published ? "Published" : "Draft"}
+            {community.published ? "Published" : "Draft"}
           </span>
         </div>
         <div className="flex items-center gap-3 text-sm">
@@ -331,32 +363,39 @@ function EditChurch({ church }: { church: Church }) {
             rel="noopener noreferrer"
             className="text-muted-foreground underline"
           >
-            {church.slug}.orthdx.site
+            {community.slug}.orthdx.site
           </a>
-          <Link to={`/parish/${church.slug}`} className="text-muted-foreground underline">
+          <Link
+            to={`/parish/${community.slug}`}
+            className="text-muted-foreground underline"
+          >
             preview
           </Link>
         </div>
       </div>
 
-      {/* Church info */}
+      {/* Community info */}
       <Card>
         <CardHeader>
-          <CardTitle>Church information</CardTitle>
+          <CardTitle>Community information</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-4">
             <Label>Images</Label>
             <div className="flex items-start gap-4">
               <ImageUpload
-                currentUrl={church.avatarUrl}
-                onUploaded={(id) => update({ id: church._id, avatarId: id })}
+                currentUrl={community.avatarUrl}
+                onUploaded={(id) =>
+                  update({ id: community._id, avatarId: id })
+                }
                 label="Avatar"
                 aspect="square"
               />
               <ImageUpload
-                currentUrl={church.bannerUrl}
-                onUploaded={(id) => update({ id: church._id, bannerId: id })}
+                currentUrl={community.bannerUrl}
+                onUploaded={(id) =>
+                  update({ id: community._id, bannerId: id })
+                }
                 label="Banner"
                 aspect="banner"
                 className="flex-1"
@@ -367,7 +406,7 @@ function EditChurch({ church }: { church: Church }) {
           <Separator />
 
           <div className="flex flex-col gap-2">
-            <Label>Parish name</Label>
+            <Label>Community name</Label>
             <Input
               value={form.name}
               onChange={(e) => setField("name", e.target.value)}
@@ -399,7 +438,7 @@ function EditChurch({ church }: { church: Church }) {
                   zip: result.zip,
                 }));
                 update({
-                  id: church._id,
+                  id: community._id,
                   address: result.address,
                   city: result.city,
                   state: result.state,

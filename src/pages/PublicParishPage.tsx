@@ -1,16 +1,18 @@
-import { useQuery } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Button } from "@/components/ui/button";
 import {
   Map,
   MapMarker,
   MarkerContent,
   MapControls,
 } from "@/components/ui/map";
+import { useState } from "react";
 
 export function PublicParishPage({ slug }: { slug: string }) {
-  const church = useQuery(api.churches.getBySlug, { slug });
+  const community = useQuery(api.communities.getBySlug, { slug });
 
-  if (church === undefined) {
+  if (community === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -18,7 +20,7 @@ export function PublicParishPage({ slug }: { slug: string }) {
     );
   }
 
-  if (church === null || !church.published) {
+  if (community === null || !community.published) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -31,13 +33,15 @@ export function PublicParishPage({ slug }: { slug: string }) {
     );
   }
 
-  return <ParishPage church={church} />;
+  return <ParishPage community={community} />;
 }
 
-interface Church {
+interface Community {
   _id: string;
   name: string;
   slug: string;
+  type: "parish" | "mission" | "monastery" | "chapel" | "cathedral";
+  status: "verified" | "unclaimed" | "pending";
   jurisdiction?: string;
   address?: string;
   city?: string;
@@ -53,12 +57,21 @@ interface Church {
   services?: { name: string; day: string; time: string }[];
 }
 
-function ParishPage({ church }: { church: Church }) {
-  const personnel = useQuery(api.personnel.listByChurch, {
-    churchId: church._id as never,
+function ParishPage({ community }: { community: Community }) {
+  const personnel = useQuery(api.personnel.listByCommunity, {
+    communityId: community._id as never,
   });
+  const { isAuthenticated } = useConvexAuth();
+  const claim = useMutation(api.communities.claim);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
 
-  const fullAddress = [church.address, church.city, church.state, church.zip]
+  const fullAddress = [
+    community.address,
+    community.city,
+    community.state,
+    community.zip,
+  ]
     .filter(Boolean)
     .join(", ");
   const mapsUrl = fullAddress
@@ -66,15 +79,25 @@ function ParishPage({ church }: { church: Church }) {
     : null;
 
   const hasCoords =
-    church.latitude !== undefined && church.longitude !== undefined;
+    community.latitude !== undefined && community.longitude !== undefined;
+
+  async function handleClaim() {
+    setClaiming(true);
+    try {
+      await claim({ id: community._id as never });
+      setClaimed(true);
+    } finally {
+      setClaiming(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
       {/* Banner */}
-      {church.bannerUrl && (
+      {community.bannerUrl && (
         <div className="h-48 w-full overflow-hidden sm:h-64">
           <img
-            src={church.bannerUrl}
+            src={community.bannerUrl}
             alt=""
             className="h-full w-full object-cover"
           />
@@ -84,34 +107,52 @@ function ParishPage({ church }: { church: Church }) {
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
         {/* Header */}
         <div className="mb-10 flex items-center gap-4">
-          {church.avatarUrl && (
+          {community.avatarUrl && (
             <img
-              src={church.avatarUrl}
+              src={community.avatarUrl}
               alt=""
               className="h-16 w-16 rounded-full object-cover"
             />
           )}
           <div>
-            <h1 className="text-3xl font-bold">{church.name}</h1>
-            {church.jurisdiction && (
+            <h1 className="text-3xl font-bold">{community.name}</h1>
+            {community.jurisdiction && (
               <p className="mt-1 text-muted-foreground">
-                {church.jurisdiction}
+                {community.jurisdiction}
               </p>
             )}
           </div>
         </div>
+
+        {/* Claim button */}
+        {community.status === "unclaimed" && isAuthenticated && !claimed && (
+          <section className="mb-8">
+            <Button onClick={handleClaim} disabled={claiming}>
+              {claiming ? "Claiming..." : "Claim this community"}
+            </Button>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Are you affiliated with this community? Claim it to manage its
+              page.
+            </p>
+          </section>
+        )}
+        {claimed && (
+          <section className="mb-8 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+            Your claim has been submitted and is pending review.
+          </section>
+        )}
 
         {/* Map */}
         {hasCoords && (
           <section className="mb-8">
             <div className="h-64 overflow-hidden rounded-lg border">
               <Map
-                center={[church.longitude!, church.latitude!]}
+                center={[community.longitude!, community.latitude!]}
                 zoom={14}
               >
                 <MapMarker
-                  longitude={church.longitude!}
-                  latitude={church.latitude!}
+                  longitude={community.longitude!}
+                  latitude={community.latitude!}
                 >
                   <MarkerContent>
                     <div className="relative h-4 w-4 rounded-full border-2 border-white bg-primary shadow-lg" />
@@ -145,13 +186,13 @@ function ParishPage({ church }: { church: Church }) {
         )}
 
         {/* Services */}
-        {church.services && church.services.length > 0 && (
+        {community.services && community.services.length > 0 && (
           <section className="mb-8">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Services
             </h2>
             <div className="flex flex-col gap-2">
-              {church.services.map((service, i) => (
+              {community.services.map((service, i) => (
                 <div key={i} className="flex justify-between">
                   <div>
                     <span className="font-medium">{service.name}</span>
@@ -197,26 +238,29 @@ function ParishPage({ church }: { church: Church }) {
         )}
 
         {/* Contact */}
-        {(church.phone || church.email || church.website) && (
+        {(community.phone || community.email || community.website) && (
           <section className="mb-8">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Contact
             </h2>
             <div className="flex flex-col gap-1">
-              {church.phone && <p>{church.phone}</p>}
-              {church.email && (
-                <a href={`mailto:${church.email}`} className="underline">
-                  {church.email}
+              {community.phone && <p>{community.phone}</p>}
+              {community.email && (
+                <a
+                  href={`mailto:${community.email}`}
+                  className="underline"
+                >
+                  {community.email}
                 </a>
               )}
-              {church.website && (
+              {community.website && (
                 <a
-                  href={church.website}
+                  href={community.website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline"
                 >
-                  {church.website}
+                  {community.website}
                 </a>
               )}
             </div>
