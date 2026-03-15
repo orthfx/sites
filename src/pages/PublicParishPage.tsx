@@ -1,5 +1,11 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import {
+  Map,
+  MapMarker,
+  MarkerContent,
+  MapControls,
+} from "@/components/ui/map";
 
 export function PublicParishPage({ slug }: { slug: string }) {
   const church = useQuery(api.churches.getBySlug, { slug });
@@ -40,6 +46,8 @@ interface Church {
   phone?: string;
   email?: string;
   website?: string;
+  latitude?: number;
+  longitude?: number;
   services?: { name: string; day: string; time: string }[];
 }
 
@@ -55,6 +63,9 @@ function ParishPage({ church }: { church: Church }) {
     ? `https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`
     : null;
 
+  const hasCoords =
+    church.latitude !== undefined && church.longitude !== undefined;
+
   return (
     <div className="flex min-h-screen flex-col">
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -65,6 +76,28 @@ function ParishPage({ church }: { church: Church }) {
             <p className="mt-1 text-muted-foreground">{church.jurisdiction}</p>
           )}
         </div>
+
+        {/* Map */}
+        {hasCoords && (
+          <section className="mb-8">
+            <div className="h-64 overflow-hidden rounded-lg border">
+              <Map
+                center={[church.longitude!, church.latitude!]}
+                zoom={14}
+              >
+                <MapMarker
+                  longitude={church.longitude!}
+                  latitude={church.latitude!}
+                >
+                  <MarkerContent>
+                    <div className="relative h-4 w-4 rounded-full border-2 border-white bg-primary shadow-lg" />
+                  </MarkerContent>
+                </MapMarker>
+                <MapControls showZoom position="bottom-right" />
+              </Map>
+            </div>
+          </section>
+        )}
 
         {/* Location */}
         {fullAddress && (

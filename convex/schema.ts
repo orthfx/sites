@@ -18,6 +18,8 @@ export default defineSchema({
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
     website: v.optional(v.string()),
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
     services: v.optional(
       v.array(
         v.object({

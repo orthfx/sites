@@ -126,6 +126,8 @@ interface Church {
   phone?: string;
   email?: string;
   website?: string;
+  latitude?: number;
+  longitude?: number;
   services?: { name: string; day: string; time: string }[];
   published: boolean;
 }
@@ -148,6 +150,8 @@ function EditChurch({ church }: { church: Church }) {
     phone: church.phone ?? "",
     email: church.email ?? "",
     website: church.website ?? "",
+    latitude: church.latitude?.toString() ?? "",
+    longitude: church.longitude?.toString() ?? "",
   });
 
   const [services, setServices] = useState(church.services ?? []);
@@ -162,9 +166,12 @@ function EditChurch({ church }: { church: Church }) {
   async function handleSave() {
     setSaving(true);
     try {
+      const { latitude, longitude, ...rest } = form;
       await update({
         id: church._id,
-        ...form,
+        ...rest,
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
         services,
       });
     } finally {
@@ -308,6 +315,31 @@ function EditChurch({ church }: { church: Church }) {
               value={form.website}
               onChange={(e) => setField("website", e.target.value)}
             />
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
+              <Label>Latitude</Label>
+              <Input
+                type="number"
+                step="any"
+                placeholder="40.7128"
+                value={form.latitude}
+                onChange={(e) => setField("latitude", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Longitude</Label>
+              <Input
+                type="number"
+                step="any"
+                placeholder="-74.0060"
+                value={form.longitude}
+                onChange={(e) => setField("longitude", e.target.value)}
+              />
+            </div>
           </div>
 
           <Button onClick={handleSave} disabled={saving}>

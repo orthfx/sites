@@ -2,6 +2,14 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+export const listPublished = query({
+  args: {},
+  handler: async (ctx) => {
+    const churches = await ctx.db.query("churches").collect();
+    return churches.filter((c) => c.published);
+  },
+});
+
 export const getBySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, args) => {
@@ -66,6 +74,8 @@ export const update = mutation({
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
     website: v.optional(v.string()),
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
     services: v.optional(
       v.array(
         v.object({
