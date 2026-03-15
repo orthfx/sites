@@ -36,8 +36,9 @@ export function AddressAutocomplete({
       if (!place.geometry?.location || !place.address_components) return;
 
       const get = (type: string) =>
-        place.address_components?.find((c) => c.types.includes(type))
-          ?.short_name ?? "";
+        place.address_components?.find(
+          (c: google.maps.GeocoderAddressComponent) => c.types.includes(type)
+        )?.short_name ?? "";
 
       const streetNumber = get("street_number");
       const route = get("route");
