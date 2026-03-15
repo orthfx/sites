@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,10 +39,14 @@ export function AdminPage() {
     <div className="min-h-screen">
       <header className="border-b px-6 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <span className="text-lg font-semibold">orthfx/sites</span>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            Sign out
-          </Button>
+          <Link to="/" className="text-lg font-semibold hover:underline">
+            orthdx.site
+          </Link>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              Sign out
+            </Button>
+          </div>
         </div>
       </header>
 

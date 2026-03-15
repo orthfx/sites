@@ -32,6 +32,9 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
+          <Link to="/" className="text-sm text-muted-foreground hover:underline">
+            &larr; Back
+          </Link>
           <CardTitle>Log in</CardTitle>
         </CardHeader>
         <CardContent>

@@ -1,4 +1,4 @@
-import { useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import { buttonVariants } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 export function LandingPage() {
   const churches = useQuery(api.churches.listPublished);
+  const { isAuthenticated } = useConvexAuth();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -13,15 +14,26 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <span className="text-lg font-semibold">orthdx.site</span>
           <div className="flex gap-2">
-            <Link
-              to="/login"
-              className={cn(buttonVariants({ variant: "ghost" }))}
-            >
-              Log in
-            </Link>
-            <Link to="/signup" className={cn(buttonVariants())}>
-              Get started
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/admin"
+                className={cn(buttonVariants({ variant: "ghost" }))}
+              >
+                Admin
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className={cn(buttonVariants({ variant: "ghost" }))}
+                >
+                  Log in
+                </Link>
+                <Link to="/signup" className={cn(buttonVariants())}>
+                  Get started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
